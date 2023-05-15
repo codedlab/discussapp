@@ -6,7 +6,7 @@
     "node": "14.*"
   },
   "scripts": {
-    "start": "nodemon ./bin/www",
+    "start": "node ./bin/www",
     "debug": "set DEBUG=myapp:* & npm start"
   },
   "dependencies": {
