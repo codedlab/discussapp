@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-var app = require('../app');
+var app = require('../index.js');
 var crypto = require('crypto');
 var debug = require('debug')('discussapp:server');
 var http = require('http');
