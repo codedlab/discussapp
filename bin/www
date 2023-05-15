@@ -1,0 +1,150 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var crypto = require('crypto');
+var debug = require('debug')('discussapp:server');
+var http = require('http');
+let posts = [];
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+var { Server } = require('socket.io');
+var io = new Server(server);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+io.on('connection', (socket) => {
+  socket.on('disconnect', () => {
+    posts = [];
+  });
+  socket.emit('contact', posts);
+  socket.on('event', (post) => {
+    if (post.hasOwnProperty('parentId')) {
+      for (let update of posts) {
+        if (update.postidno === post.parentId) {
+          let id = crypto.randomBytes(2).toString('hex');
+          let createdtime = new Date().toUTCString();
+          update.reply.push({ commentId: id, content: post.comment, createdtime, replyupvote: [] });
+          replyUpdate = { commentId: id, createdtime, replyupvote: [], ...post };
+          io.emit('event', replyUpdate);
+          return;
+        }
+      }
+    }
+    else if (post.hasOwnProperty('postid')) {
+      if (Object.keys(post).length === 3) {
+        for (let update of posts) {
+          if (update.postidno === post.postid) {
+            for (let upvote of update.reply) {
+              if (upvote.commentId === post.postReplyId && upvote.replyupvote.indexOf(post.userid) === -1) {
+                upvote.replyupvote.push(post.userid);
+                voteUpdate = { ...post };
+                io.emit('event', voteUpdate);
+                return;
+              }
+            }
+          }
+        }
+      }
+      else {
+        for (let update of posts) {
+          if (update.postidno === post.postid && (update.upvote.indexOf(post.userid) === -1)) {
+            update.upvote.push(post.userid);
+            voteUpdate = { ...post };
+            io.emit('event', voteUpdate);
+            return;
+          }
+        }
+      }
+    }
+    else {
+      createdby = post.createdby;
+      post = post.post;
+      let postidno = crypto.randomBytes(4).toString('hex');
+      let createdtime = new Date().toUTCString();
+      statusUpdate = { postidno, post, createdby, createdtime, upvote: [], reply: [] };
+      posts.push(statusUpdate);
+      io.emit('event', statusUpdate);
+      return;
+    }
+  });
+});
+
+server.on('error', onError);
+server.on('listening', onListening);
+
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
