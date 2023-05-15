@@ -2,6 +2,9 @@
   "name": "discussapp",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": "14.*"
+  },
   "scripts": {
     "start": "nodemon ./bin/www",
     "debug": "set DEBUG=myapp:* & npm start"
