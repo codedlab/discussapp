@@ -40,6 +40,10 @@ io.on('connection', (socket) => {
           let id = crypto.randomBytes(2).toString('hex');
           let createdtime = new Date().toUTCString();
           update.reply.push({ commentId: id, content: post.comment, createdtime, replyupvote: [] });
+          var i = update.reply.length;
+          while (i > 10) {
+            update.reply.shift()
+          }
           replyUpdate = { commentId: id, createdtime, replyupvote: [], ...post };
           io.emit('event', replyUpdate);
           return;
@@ -79,6 +83,11 @@ io.on('connection', (socket) => {
       let createdtime = new Date().toUTCString();
       statusUpdate = { postidno, post, createdby, createdtime, upvote: [], reply: [] };
       posts.push(statusUpdate);
+      var i = posts.length;
+      while (i > 10) {
+        posts.shift()
+      }
+      console.log(posts);
       io.emit('event', statusUpdate);
       return;
     }
